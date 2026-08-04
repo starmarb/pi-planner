@@ -1,5 +1,3 @@
-# docs/ 폴더를 그대로 GitHub Pages에 올립니다.
-# Jekyll을 아예 거치지 않으므로 테마·scss·_site 관련 오류가 발생하지 않습니다.
 name: Deploy to GitHub Pages
 
 "on":
@@ -25,12 +23,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # 폴더 구조를 어떻게 커밋했든 index.html이 있는 곳을 찾아냅니다.
+      # (docs/ · deploy/docs/ · 저장소 루트 모두 대응)
+      - name: Find the folder to publish
+        id: find
+        run: |
+          if   [ -f docs/index.html ];        then echo "dir=docs"        >> "$GITHUB_OUTPUT"
+          elif [ -f deploy/docs/index.html ]; then echo "dir=deploy/docs" >> "$GITHUB_OUTPUT"
+          elif [ -f index.html ];             then echo "dir=."           >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::index.html을 찾지 못했습니다. 아래 트리를 확인하세요."
+            find . -name node_modules -prune -o -type f -print | head -60
+            exit 1
+          fi
+          echo "publishing: $(cat "$GITHUB_OUTPUT")"
+
       - uses: actions/configure-pages@v5
 
-      # docs 폴더를 정적 파일 그대로 업로드 (빌드 없음 — bundle.js는 이미 커밋되어 있음)
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: docs
+          path: ${{ steps.find.outputs.dir }}
 
       - id: deployment
         uses: actions/deploy-pages@v4
