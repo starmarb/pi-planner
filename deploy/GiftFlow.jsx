@@ -25,12 +25,26 @@ const ASSET_BASE = null;
 const asset = (folder, name, inline) =>
   ASSET_BASE ? `${ASSET_BASE}assets/${folder}/${name}.webp` : inline;
 
+/* 결과 페이지 히어로만 저장소의 파일에서 불러옵니다.
+   상대 경로라 GitHub 사용자명·저장소명을 몰라도 되고, 로컬에서도 그대로 됩니다.
+   (index.html과 같은 폴더의 assets/hero/ 를 봅니다.)
+   비우면(null) 다시 파일에 인라인된 base64를 씁니다. */
+const HERO_BASE = "assets/hero/";
+
+/* 실제로 저장소에 올라간 파일 목록. 여자아이는 _f.
+   late_20s(26~29세)는 아직 없어서 HERO_NEAR가 20s → 30으로 대체합니다. */
 const HERO_KEYS = new Set([
-  "kid_15", "19_15", "20s_15", "late_20s_15", "30_15",           // 기차 15%
-  "kid_10", "teen_10", "19_10", "20s_10", "30_10",               // 버스 10%
-  // "kid_7","teen_7","19_7","20s_7","late_20s_7","30_7",        // 자동차 7%
-  // "kid_5","teen_5","19_5","20s_5","late_20s_5","30_5",        // 자전거 5%
-  // "kid_3","teen_3","19_3","20s_3","late_20s_3","30_3",        // 유모차 3%
+  "kid_15", "teen_15", "19_15", "20s_15", "30_15",                      // 기차 15%
+  "kid_10", "teen_10", "19_10", "20s_10", "30_10",                      // 버스 10%
+  "kid_7", "teen_7", "19_7", "20s_7", "30_7",                           // 자동차 7%
+  "kid_5", "teen_5", "19_5", "20s_5", "30_5",                           // 자전거 5%
+  "kid_3", "teen_3", "19_3", "20s_3", "30_3",                           // 유모차 3%
+
+  "kid_15_f", "teen_15_f", "19_15_f", "20s_15_f", "30_15_f",            // 기차 15%
+  "kid_10_f", "teen_10_f", "19_10_f", "20s_10_f", "30_10_f",            // 버스 10%
+  "kid_7_f", "teen_7_f", "19_7_f", "20s_7_f", "30_7_f",                 // 자동차 7%
+  "kid_5_f", "teen_5_f", "19_5_f", "20s_5_f", "30_5_f",                 // 자전거 5%
+  "kid_3_f", "teen_3_f", "19_3_f", "20s_3_f", "30_3_f",                 // 유모차 3%
 ]);
 
 const IMG = {
@@ -119,13 +133,23 @@ const HERO_NEAR = {
   "30": ["30", "late_20s", "20s"],
 };
 
-const heroFor = (age, rate, fallback) => {
-  for (const b of HERO_NEAR[heroBucket(age)]) {
-    const key = `${b}_${rate}`;
-    const has = ASSET_BASE ? HERO_KEYS.has(key) : !!HERO[key];
-    if (has) return asset("hero", key, HERO[key]);
-  }
-  return fallback; // 아직 세트가 없는 수익률 → 캐러셀 이미지
+const heroHas = (key) =>
+  HERO_BASE || ASSET_BASE ? HERO_KEYS.has(key) : !!HERO[key];
+const heroSrc = (key) =>
+  HERO_BASE ? `${HERO_BASE}${key}.webp` : asset("hero", key, HERO[key]);
+
+/* 여자아이 파일은 뒤에 _f가 붙습니다 (예: 20s_10_f.webp).
+   같은 성별 안에서 가까운 구간을 먼저 찾고, 그래도 없으면 남자아이 세트,
+   마지막에 캐러셀 이미지로 내려갑니다 — 성별이 함부로 바뀌지 않게. */
+const heroFor = (age, rate, fallback, female = false) => {
+  const buckets = HERO_NEAR[heroBucket(age)];
+  const suffixes = female ? ["_f", ""] : [""];
+  for (const sfx of suffixes)
+    for (const b of buckets) {
+      const key = `${b}_${rate}${sfx}`;
+      if (heroHas(key)) return heroSrc(key);
+    }
+  return fallback;
 };
 
 const CARD_SPACING = 200;
@@ -550,7 +574,7 @@ function YearsSheet({ selected, onClose, onConfirm }) {
 
 /* ======================= 결과 화면 (571:6534 / 640:5631) ================ */
 function ResultScreen({
-  plans, tier, setTier, childName, records = {}, onDetail, gifts = [], theoretical = false,
+  plans, tier, setTier, childName, records = {}, onDetail, gifts = [], theoretical = false, female = false,
   currentAge = CURRENT_AGE, stopAge = 0, stopIndex, stopCount, onNextStop,
   mode = "plan", chartYears = HORIZON, chartTotal = 0,
 }) {
@@ -564,7 +588,7 @@ function ResultScreen({
      '__년 후'는 그 나이까지 지금부터 몇 년인지 — 12살 만기면 2살 기준 10년 후. */
   const targetAge = isChart ? currentAge + chartYears : stopAge + horizon;
   const yearsAway = targetAge - currentAge;
-  const hero = heroFor(targetAge, rate, TIERS[tier].img);
+  const hero = heroFor(targetAge, rate, TIERS[tier].img, female);
   const isLastStop = stopIndex >= stopCount - 1;
   const isNowStop = stopIndex === 0; // 오늘 나이 = 실제로 지금 증여할 수 있는 구간
 
@@ -796,6 +820,7 @@ function GiftFlow({
   onDetail,
   gifts = [],
   theoretical = false,
+  female = false,
   onExit,
   tier,
   setTier,
@@ -1116,6 +1141,7 @@ function GiftFlow({
               onDetail={onDetail}
               gifts={gifts}
               theoretical={theoretical}
+              female={female}
               stopAge={stopAge}
               stopIndex={stopIndex}
               stopCount={stopCount}
@@ -2174,7 +2200,7 @@ function DetailSheet({ records, tier, currentAge, childName, gifts = [], onClose
   useEffect(() => { setPin((p) => Math.max(p, chartFrom)); }, [chartFrom]);
   const [tipOn, setTipOn] = useState(true);
   const [openRow, setOpenRow] = useState(null);
-  const [sumOpen, setSumOpen] = useState(true);
+  const [sumOpen, setSumOpen] = useState(false); // 기본은 접힌 상태
   const scrollRef = useRef(null);
   const dragRef = useRef(false);
   const svgRef = useRef(null);
@@ -2422,8 +2448,7 @@ function DetailSheet({ records, tier, currentAge, childName, gifts = [], onClose
                   data-pstart={p.startAge}
                   className={
                     "pi-dt__p" + (on ? " is-on" : "") + (open ? " is-open" : "") +
-                    (p.empty ? " is-empty" : "") +
-                    (p.kind === "gift" ? " is-gift" : "")
+                    (p.empty ? " is-empty" : "")
                   }
                 >
                   <span className="pi-dt__dot" />
@@ -2437,11 +2462,6 @@ function DetailSheet({ records, tier, currentAge, childName, gifts = [], onClose
                       <span>
                         <b className="pi-dt__page">만 {p.startAge}세</b>
                         {p.years > 0 && <span className="pi-dt__pdur">{p.years}년</span>}
-                        {p.kind === "gift" && (
-                          <span className={"pi-dt__badge" + (p.inWindow ? " is-live" : "")}>
-                            {p.inWindow ? "증여 중" : "한도 복원"}
-                          </span>
-                        )}
                       </span>
                       <span className="pi-dt__ptot">
                         {!p.empty && (
@@ -2452,18 +2472,6 @@ function DetailSheet({ records, tier, currentAge, childName, gifts = [], onClose
                         )}
                       </span>
                     </span>
-                    {/* 접힌 채로도 내용이 보이게 — 헤더 flex 밖에 한 줄로 둡니다 */}
-                    {p.kind === "gift" && (
-                      <span className="pi-dt__gsub">
-                        {p.groups[0].label}
-                        {p.groups[0].monthly
-                          ? ` · 월 ${p.groups[0].monthly.toLocaleString("ko-KR")}원`
-                          : ""}
-                        {p.inWindow
-                          ? ` · 공제 ${eokman(p.consumed)} 소진`
-                          : " · 공제한도 영향 없음"}
-                      </span>
-                    )}
                   </button>
                   {open && !p.empty && (
                     <div className="pi-dt__pex">
@@ -2479,29 +2487,11 @@ function DetailSheet({ records, tier, currentAge, childName, gifts = [], onClose
                         </div>
                       ))}
                       <div className="pi-dt__exr pi-dt__exr--ret">
-                        {p.kind === "gift" ? (
-                          <>
-                            <span>
-                              <span className="pi-dt__exn">
-                                {p.inWindow ? "공제한도 소진" : "공제한도 영향 없음"}
-                              </span>
-                              <span className="pi-dt__exm">
-                                {p.inWindow
-                                  ? `${p.since ? p.since.slice(0, 7).replace("-", ". ") + " 시작 · " : ""}10년 창 안`
-                                  : "10년이 지나 한도가 복원됐어요"}
-                              </span>
-                            </span>
-                            <span className="pi-dt__exv">{eokman(p.consumed)}</span>
-                          </>
-                        ) : (
-                          <>
-                            <span>
-                              <span className="pi-dt__exn">수익률</span>
-                              <span className="pi-dt__exm">연 {TIERS[tier].pct} 복리</span>
-                            </span>
-                            <span className="pi-dt__exv pi-dt__exv--up">+ {eokman(p.growth)}</span>
-                          </>
-                        )}
+                        <span>
+                          <span className="pi-dt__exn">수익률</span>
+                          <span className="pi-dt__exm">연 {TIERS[tier].pct} 복리</span>
+                        </span>
+                        <span className="pi-dt__exv pi-dt__exv--up">+ {eokman(p.growth)}</span>
                       </div>
                     </div>
                   )}
@@ -2670,6 +2660,7 @@ export default function PiApp(props) {
                 currentAge={kid.age}
                 records={records}
                 onDetail={setDetailRec}
+                female={kid.female === true}
                 chartTotal={chartTotal}
                 plans={{}}
                 tier={tier}
@@ -2693,6 +2684,7 @@ export default function PiApp(props) {
             onDetail={setDetailRec}
             gifts={kid.gifts ?? []}
             theoretical={kid.theoretical === true}
+            female={kid.female === true}
             tier={tier}
             setTier={setTier}
             /* 그 구간의 한도를 그대로 넘긴다 — 19살 이후엔 직계가 5,000만원 */
@@ -3293,12 +3285,4 @@ const CSS = `
 .pi-dt__exv--bd{font-size:15px;color:var(--gray-80)}
 
 .pi-dt__cta{width:100%;margin-top:22px}
-/* 기존 증여 카드 — 계획과 구분되게 점선으로 눌러 둡니다 */
-.pi-dt__p.is-gift .pi-dt__pbtn{background:var(--gray-10);border-style:dashed;
-  border-color:var(--gray-20)}
-.pi-dt__p.is-gift.is-open .pi-dt__pbtn{border-style:solid;background:var(--gray-00)}
-.pi-dt__badge{margin-left:6px;white-space:nowrap;padding:2px 6px;border-radius:5px;background:var(--gray-20);
-  color:var(--gray-60);font-size:10.5px;font-weight:700;vertical-align:2px}
-.pi-dt__badge.is-live{background:var(--rose-20);color:#8a5f52}
-.pi-dt__gsub{display:block;margin-top:5px;font-size:12px;line-height:18px;color:var(--gray-50)}
 `;
