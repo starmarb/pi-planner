@@ -1,0 +1,36 @@
+# docs/ 폴더를 그대로 GitHub Pages에 올립니다.
+# Jekyll을 아예 거치지 않으므로 테마·scss·_site 관련 오류가 발생하지 않습니다.
+name: Deploy to GitHub Pages
+
+"on":
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/configure-pages@v5
+
+      # docs 폴더를 정적 파일 그대로 업로드 (빌드 없음 — bundle.js는 이미 커밋되어 있음)
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
