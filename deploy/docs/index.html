@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>우리 아이 자산 성장표</title>
+<style>
+  html,body{margin:0;height:100%;background:#e9e9ec;
+    font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif}
+  /* 화면은 375x812 고정 설계입니다. 데스크톱에서는 가운데에 세우고,
+     작은 화면에서는 통째로 축소해서 잘리지 않게 합니다. */
+  #stage{position:absolute;left:50%;top:50%;width:375px;height:812px;
+    transform:translate(-50%,-50%);transform-origin:center center;
+    background:#fff;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.16)}
+  #root{width:375px;height:812px;position:relative;overflow:hidden}
+  @media (max-width:420px), (max-height:860px){
+    html,body{background:#fff}
+    #stage{box-shadow:none}
+  }
+</style>
+</head>
+<body>
+<div id="stage"><div id="root"></div></div>
+<script>
+/* 뷰포트보다 크면 비율을 유지하며 축소 (모바일 브라우저 주소창 대응 포함) */
+(function(){
+  var st=document.getElementById('stage');
+  function fit(){
+    var s=Math.min(window.innerWidth/375, window.innerHeight/812, 1);
+    st.style.transform='translate(-50%,-50%) scale('+s+')';
+  }
+  fit(); window.addEventListener('resize',fit); window.addEventListener('orientationchange',fit);
+})();
+</script>
+<script src="./bundle.js"></script>
+</body>
+</html>

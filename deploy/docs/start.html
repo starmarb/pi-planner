@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>파이앱 · 성장표 프로토타입</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css">
+<style>
+  /* ── 앱과 같은 토큰 ── */
+  :root{
+    --gray-00:#fff; --gray-10:#f2f2f3; --gray-20:#dddddf; --gray-40:#bebec1;
+    --gray-50:#8a8a8f; --gray-60:#707075; --gray-70:#555558; --gray-80:#39393c;
+    --gray-90:#141415;
+    --brand:#f37521; --brand-tint:#fff2e5; --orange-70:#e5640e;
+    --rose:#c19386; --rose-20:#f5e5dc; --blue:#7d8d9d; --blue-20:#dde5ed;
+    --font:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--gray-10);font-family:var(--font);color:var(--gray-90);
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:720px;margin:0 auto;padding:56px 20px 80px}
+
+  .eyebrow{display:inline-block;padding:5px 10px;border-radius:100px;
+    background:var(--brand-tint);color:var(--orange-70);
+    font-size:12px;font-weight:700;letter-spacing:-.12px}
+  h1{margin:16px 0 0;font-size:26px;line-height:36px;letter-spacing:-.4px;font-weight:800}
+  .sub{margin:10px 0 0;font-size:14px;line-height:23px;color:var(--gray-60);max-width:52ch}
+  .warn{margin:20px 0 0;padding:12px 14px;border-radius:10px;background:var(--gray-00);
+    border:1px solid var(--gray-20);font-size:12.5px;line-height:20px;color:var(--gray-60)}
+  .warn b{color:var(--gray-80)}
+
+  .grid{display:grid;gap:14px;margin:28px 0 0}
+  @media(min-width:640px){.grid{grid-template-columns:1fr 1fr}}
+
+  .card{display:flex;flex-direction:column;background:var(--gray-00);border:1px solid var(--gray-20);
+    border-radius:14px;padding:20px;text-decoration:none;color:inherit;
+    transition:border-color .16s ease, transform .16s ease, box-shadow .16s ease}
+  .card:hover{border-color:var(--brand);transform:translateY(-2px);
+    box-shadow:0 6px 20px rgba(20,20,21,.07)}
+  .card:focus-visible{outline:2px solid var(--brand);outline-offset:3px}
+
+  .who{display:flex;align-items:center;gap:10px}
+  .av{width:38px;height:38px;border-radius:50%;flex:none;display:grid;place-items:center;
+    font-size:14px;font-weight:800;color:var(--gray-00)}
+  .user{font-size:16px;font-weight:800;letter-spacing:-.2px}
+  .label{margin-top:2px;font-size:12px;font-weight:600;color:var(--brand)}
+
+  .note{margin:14px 0 0;font-size:13px;line-height:21px;color:var(--gray-60)}
+
+  .kids{margin:14px 0 0;padding:12px 0 0;border-top:1px solid var(--gray-10);
+    display:flex;flex-direction:column;gap:9px}
+  .kid{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+  .kname{font-size:13px;font-weight:700;color:var(--gray-70)}
+  .kmeta{font-size:12px;color:var(--gray-50);text-align:right}
+
+  .tags{margin:14px 0 0;display:flex;flex-wrap:wrap;gap:6px}
+  .tag{font-size:11px;font-weight:600;padding:4px 8px;border-radius:6px;
+    background:var(--gray-10);color:var(--gray-60)}
+  .tag.on{background:var(--rose-20);color:#8a5f52}
+  .tag.off{background:var(--blue-20);color:#4e6070}
+
+  .go{margin:16px 0 0;display:flex;align-items:center;gap:5px;
+    font-size:13px;font-weight:700;color:var(--brand)}
+
+  .plain{margin:26px 0 0;text-align:center}
+  .plain a{font-size:13px;color:var(--gray-60);text-decoration:none;border-bottom:1px solid var(--gray-20);
+    padding-bottom:2px}
+  .plain a:hover{color:var(--brand);border-color:var(--brand)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <span class="eyebrow">내부 공유용 · 검색 노출 안 됨</span>
+  <h1>우리 아이 자산 성장표<br>페르소나별로 체험해 보세요</h1>
+  <p class="sub">
+    가족마다 증여를 시작하는 시점, 아이의 나이, 이미 해 둔 증여가 다 다릅니다.
+    아래에서 한 사람을 고르면 그 사람의 상황 그대로 프로토타입이 시작됩니다.
+  </p>
+
+  <div class="warn">
+    <b>참고</b> · 나이는 오늘 날짜 기준 만 나이로 자동 계산됩니다. 기존 증여 금액은
+    유기정기금 현재가치로 환산해 이미 소진한 공제한도로 반영했습니다.
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <p class="plain"><a href="./">페르소나 없이 기본 상태로 열기</a></p>
+</div>
+
+<script>
+/* 앱이 다른 경로에 있으면 여기만 바꾸세요. 예: "./app/" */
+var APP = "./";
+
+var PEOPLE = [
+  { key:"youngjae", user:"김영재", label:"이제 막 시작하는 부모",
+    color:"var(--brand)",
+    note:"아이가 두 살. 홈택스는 연동했지만 증여 이력은 아직 없어, 완전히 백지에서 계획을 세웁니다.",
+    tags:[["홈택스 연동","on"],["증여 이력 없음",""],["수익률 5%",""]],
+    kids:[{n:"김영재",m:"2024. 02. 12 · 만 2세"}] },
+
+  { key:"woosik", user:"박우식", label:"성인 자녀를 둔 부모",
+    color:"var(--blue)",
+    note:"아이가 이미 만 20세 성인. 성인 공제한도(5,000만원)로만 계획하며, 15세에 받은 100만원은 아직 10년 창 안에 있어 한도에서 빠집니다.",
+    tags:[["홈택스 연동","on"],["성인 공제만","off"],["기존 100만원 소진",""]],
+    kids:[{n:"박지은",m:"2006. 01. 14 · 만 20세"}] },
+
+  { key:"jihoon", user:"홍지훈", label:"두 아이에게 매달 증여 중",
+    color:"var(--rose)",
+    note:"2024년 4월부터 두 아이에게 정기 증여를 하고 있습니다. 아이를 바꿔 가며 각각의 남은 한도를 볼 수 있어요.",
+    tags:[["자녀 2명","on"],["정기증여 진행 중",""],["수익률 10%",""]],
+    kids:[{n:"홍이안",m:"2016. 07. 14 · 만 10세 · 기존 864만원"},
+          {n:"홍지현",m:"2018. 12. 18 · 만 7세 · 기존 659만원"}] },
+
+  { key:"hyesoo", user:"전혜수", label:"쌍둥이를 기다리는 예비 부모",
+    color:"var(--gray-50)",
+    note:"2026년 10월 출산 예정. 아직 태어나지 않아 홈택스에 기록이 없고, 태어나기 전부터 계획을 그려 봅니다.",
+    tags:[["홈택스 미연동","off"],["쌍둥이","on"],["출산 전",""]],
+    kids:[{n:"쌍둥이 1",m:"2026. 10. 03 출산 예정"},
+          {n:"쌍둥이 2",m:"2026. 10. 03 출산 예정"}] },
+];
+
+document.getElementById("grid").innerHTML = PEOPLE.map(function(p){
+  return '<a class="card" href="' + APP + '?p=' + p.key + '">'
+    + '<div class="who">'
+    +   '<span class="av" style="background:' + p.color + '">' + p.user.charAt(0) + '</span>'
+    +   '<span><span class="user">' + p.user + '</span>'
+    +   '<span class="label" style="display:block">' + p.label + '</span></span>'
+    + '</div>'
+    + '<p class="note">' + p.note + '</p>'
+    + '<div class="kids">' + p.kids.map(function(k){
+        return '<div class="kid"><span class="kname">' + k.n + '</span>'
+             + '<span class="kmeta">' + k.m + '</span></div>';
+      }).join("") + '</div>'
+    + '<div class="tags">' + p.tags.map(function(t){
+        return '<span class="tag ' + t[1] + '">' + t[0] + '</span>';
+      }).join("") + '</div>'
+    + '<div class="go">이 사람으로 체험하기 →</div>'
+    + '</a>';
+}).join("");
+</script>
+</body>
+</html>
